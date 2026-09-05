@@ -13,32 +13,32 @@ class YandexMetadataExtractor(BaseMetadataExtractor):
     def get_account_number(self, words_per_page: Dict[int, List[Word]]) -> int:
         current_words = words_per_page[0]
         try:
-            prev_text_i = self._look_up_collocation("Дата рождения", current_words)
+            _, prev_text_end_i = self._look_up_collocation("Дата рождения", current_words)
         except IndexError as e:
             raise IndexError("no account number found on first page") from e
 
-        account_number = int(re.sub("[^0-9]", "", current_words[prev_text_i + 4].text))
+        account_number = int(re.sub("[^0-9]", "", current_words[prev_text_end_i + 2].text))
         return account_number
 
     def get_issued_date(self, words_per_page: Dict[int, List[Word]]) -> dt.date:
         current_words = words_per_page[0]
         try:
-            collocation_start_i = self._look_up_collocation("Дата", current_words)
+            _, collocation_end_i = self._look_up_collocation("Дата", current_words)
         except IndexError as e:
             raise IndexError("no issued date found on first page") from e
 
-        issued_date = current_words[collocation_start_i + 1]
+        issued_date = current_words[collocation_end_i]
         return dt.datetime.strptime(issued_date.text, "%d.%m.%Y").date()
 
     def get_owner_name(self, words_per_page: Dict[int, List[Word]]) -> str:
         current_words = words_per_page[0]
 
         try:
-            prev_text_i = self._look_up_collocation("(далее — «Банк»),", current_words)
+            _, prev_text_end_i = self._look_up_collocation("(далее — «Банк»),", current_words)
         except IndexError as e:
             raise IndexError("no owner name found on first page") from e
 
-        current_words = current_words[prev_text_i + 3 :]
+        current_words = current_words[prev_text_end_i:]
 
         name_words = [current_words[0]]
         current_words = current_words[1:]
@@ -55,12 +55,12 @@ class YandexMetadataExtractor(BaseMetadataExtractor):
         words_first_page = words_per_page[0]
 
         try:
-            collocation_start_i = self._look_up_collocation("Выписка по Договору за период с", words_first_page)
+            _, collocation_end_i = self._look_up_collocation("Выписка по Договору за период с", words_first_page)
         except IndexError as e:
             raise IndexError("no period found on first page") from e
 
-        start_date = words_first_page[collocation_start_i + 6]
-        end_date = words_first_page[collocation_start_i + 8]
+        start_date = words_first_page[collocation_end_i]
+        end_date = words_first_page[collocation_end_i + 2]
 
         start_date = dt.datetime.strptime(start_date.text, "%d.%m.%Y").date()
         end_date = dt.datetime.strptime(end_date.text, "%d.%m.%Y").date()

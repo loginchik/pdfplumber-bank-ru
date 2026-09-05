@@ -65,13 +65,13 @@ class BaseMetadataExtractor(ABC, BasicProcessor):
     def get_period(self, words_per_page: Dict[int, List[Word]]) -> Tuple[dt.date, dt.date]: ...
 
     @staticmethod
-    def _look_up_collocation(collocation: str, words: List[Word]) -> int:
+    def _look_up_collocation(collocation: str, words: List[Word]) -> Tuple[int, int]:
         """
         Последовательно перебирает набор слов до тех пор, пока не найдёт заданное словосочетание
 
         :param collocation: целевое словосочетание
         :param words: слова для перебора
-        :return: индекс слова в наборе, с которого начинается словосочетание
+        :return: индексы слов, ограничивающих словосочетание, в исходном наборе
         """
         collocation_words = collocation.split(" ")
 
@@ -79,6 +79,6 @@ class BaseMetadataExtractor(ABC, BasicProcessor):
             if word.text == collocation_words[0]:
                 possible_collocation = " ".join([w.text for w in words[i : i + len(collocation_words)]])
                 if possible_collocation == collocation:
-                    return i
+                    return i, i + len(collocation_words)
 
         raise IndexError(f"collocation '{collocation}' no found in words")

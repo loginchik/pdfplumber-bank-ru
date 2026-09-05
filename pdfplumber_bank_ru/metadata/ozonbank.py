@@ -13,32 +13,31 @@ class OzonBankMetadataExtractor(BaseMetadataExtractor):
     def get_account_number(self, words_per_page: Dict[int, List[Word]]) -> int:
         current_words = words_per_page[0]
         try:
-            label_i = self._look_up_collocation("Номер лицевого счёта:", current_words)
+            _, label_end_i = self._look_up_collocation("Номер лицевого счёта:", current_words)
         except IndexError as e:
             raise IndexError("no account number found on first page") from e
 
-        account_number = int(re.sub("[^0-9]", "", current_words[label_i + 4].text))
+        account_number = int(re.sub("[^0-9]", "", current_words[label_end_i + 1].text))
         return account_number
 
     def get_issued_date(self, words_per_page: Dict[int, List[Word]]) -> dt.date:
         current_words = words_per_page[0]
         try:
-            collocation_start_i = self._look_up_collocation("Дата и время формирования документа:", current_words)
+            _, collocation_end_i = self._look_up_collocation("Дата и время формирования документа:", current_words)
         except IndexError as e:
             raise IndexError("no issued date found on first page") from e
 
-        issued_date = current_words[collocation_start_i + 5]
+        issued_date = current_words[collocation_end_i]
         return dt.datetime.strptime(issued_date.text, "%d.%m.%Y").date()
 
     def get_owner_name(self, words_per_page: Dict[int, List[Word]]) -> str:
         current_words = words_per_page[0]
 
         try:
-            label_i = self._look_up_collocation("Владелец:", current_words)
+            _, label_end_i = self._look_up_collocation("Владелец:", current_words)
         except IndexError as e:
             raise IndexError("no owner name found on first page") from e
-
-        current_words = current_words[label_i + 1 :]
+        current_words = current_words[label_end_i:]
 
         name_words = [current_words[0]]
         current_words = current_words[1:]
@@ -55,12 +54,12 @@ class OzonBankMetadataExtractor(BaseMetadataExtractor):
         words_first_page = words_per_page[0]
 
         try:
-            collocation_start_i = self._look_up_collocation("Период выписки:", words_first_page)
+            _, collocation_end_i = self._look_up_collocation("Период выписки:", words_first_page)
         except IndexError as e:
             raise IndexError("no period found on first page") from e
 
-        start_date = words_first_page[collocation_start_i + 2]
-        end_date = words_first_page[collocation_start_i + 4]
+        start_date = words_first_page[collocation_end_i]
+        end_date = words_first_page[collocation_end_i + 2]
 
         start_date = dt.datetime.strptime(start_date.text, "%d.%m.%Y").date()
         end_date = dt.datetime.strptime(end_date.text, "%d.%m.%Y").date()
