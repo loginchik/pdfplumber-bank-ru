@@ -8,6 +8,7 @@ import pytest
 from pdfplumber_bank_ru.metadata.base import Metadata
 from pdfplumber_bank_ru.metadata.tbank import TBankMetadataExtractor
 from pdfplumber_bank_ru.metadata.raiffeisen import RaiffeisenMetadataExtractor
+from pdfplumber_bank_ru.metadata.alfabank import AlfaBankMetadataExtractor
 
 
 class TestMetadataExtractorBase:
@@ -59,3 +60,9 @@ class TestRaiffeisenMetadataExtractor(TestMetadataExtractorBase):
     __test__ = True
     filename = "raiffeisen_1.pdf"
     extractor_class = RaiffeisenMetadataExtractor
+
+
+class TestAlfaBankMetadataExtractor(TestMetadataExtractorBase):
+    __test__ = True
+    filename = "alfabank_1.pdf"
+    extractor_class = AlfaBankMetadataExtractor
