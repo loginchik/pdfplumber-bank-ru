@@ -63,17 +63,35 @@ class TestRaiffeisenMetadataExtractor(TestMetadataExtractorBase):
     filename = "raiffeisen_1.pdf"
     extractor_class = RaiffeisenMetadataExtractor
 
+    def test_get_account_number(self) -> None:
+        value = self.extractor.get_account_number(self.words_per_page)
+        assert isinstance(value, int)
+        assert len(str(value)) == 20
+        assert any(str(value).startswith(x) for x in ["407", "408"])
+
 
 class TestAlfaBankMetadataExtractor(TestMetadataExtractorBase):
     __test__ = True
     filename = "alfabank_1.pdf"
     extractor_class = AlfaBankMetadataExtractor
 
+    def test_get_account_number(self) -> None:
+        value = self.extractor.get_account_number(self.words_per_page)
+        assert isinstance(value, int)
+        assert len(str(value)) == 20
+        assert any(str(value).startswith(x) for x in ["407", "408"])
+
 
 class TestOzonBankMetadataExtractor(TestMetadataExtractorBase):
     __test__ = True
     filename = "ozon_1.pdf"
     extractor_class = OzonBankMetadataExtractor
+
+    def test_get_account_number(self) -> None:
+        value = self.extractor.get_account_number(self.words_per_page)
+        assert isinstance(value, int)
+        assert len(str(value)) == 20
+        assert any(str(value).startswith(x) for x in ["407", "408"])
 
 
 class TestYandexMetadataExtractor(TestMetadataExtractorBase):
