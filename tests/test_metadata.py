@@ -9,6 +9,7 @@ from pdfplumber_bank_ru.metadata.base import Metadata
 from pdfplumber_bank_ru.metadata.tbank import TBankMetadataExtractor
 from pdfplumber_bank_ru.metadata.raiffeisen import RaiffeisenMetadataExtractor
 from pdfplumber_bank_ru.metadata.alfabank import AlfaBankMetadataExtractor
+from pdfplumber_bank_ru.metadata.ozonbank import OzonBankMetadataExtractor
 
 
 class TestMetadataExtractorBase:
@@ -66,3 +67,9 @@ class TestAlfaBankMetadataExtractor(TestMetadataExtractorBase):
     __test__ = True
     filename = "alfabank_1.pdf"
     extractor_class = AlfaBankMetadataExtractor
+
+
+class TestOzonBankMetadataExtractor(TestMetadataExtractorBase):
+    __test__ = True
+    filename = "ozon_1.pdf"
+    extractor_class = OzonBankMetadataExtractor
