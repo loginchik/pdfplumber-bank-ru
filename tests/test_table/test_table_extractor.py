@@ -5,10 +5,12 @@ from typing import Union
 import pandas as pd
 import pytest
 
+from commons.enums import TableColumnEnum
 from pdfplumber_bank_ru.table.alfabank import AlfaBankTableExtractor
 from pdfplumber_bank_ru.table.ozonbank import OzonBankTableExtractor
 from pdfplumber_bank_ru.table.raiffeisen import RaiffeisenTableExtractor
 from pdfplumber_bank_ru.table.tbank import TBankTableExtractor
+from pdfplumber_bank_ru.table.yandex import YandexTableExtractor
 
 
 class TestTableExtractorBase(ABC):
@@ -27,6 +29,8 @@ class TestTableExtractorBase(ABC):
         assert isinstance(df, pd.DataFrame)
         assert df.shape[0] > 0
         assert all(isinstance(x, str) for x in df.columns)
+
+        assert df[TableColumnEnum.bank_name.value].values[0] == self.processor_class.BANK_NAME
 
 
 class TestAlfabankTableExtractor(TestTableExtractorBase):
@@ -51,3 +55,9 @@ class TestTBankTableExtractor(TestTableExtractorBase):
     __test__ = True
     filename = "tbank_1.pdf"
     processor_class = TBankTableExtractor
+
+
+class TestYandexTableExtractor(TestTableExtractorBase):
+    __test__ = True
+    filename = "yandex_1.pdf"
+    processor_class = YandexTableExtractor

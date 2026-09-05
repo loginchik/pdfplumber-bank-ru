@@ -11,6 +11,7 @@ from pdfplumber_bank_ru.table.alfabank import AlfaBankTablePageExtractor
 from pdfplumber_bank_ru.table.tbank import TBankTablePageExtractor
 from pdfplumber_bank_ru.table.raiffeisen import RaiffeisenTablePageExtractor
 from pdfplumber_bank_ru.table.ozonbank import OzonBankTablePageExtractor
+from pdfplumber_bank_ru.table.yandex import YandexTablePageExtractor
 
 
 class TestPageExtractorBase(ABC):
@@ -131,8 +132,8 @@ class TestRaiffeisenPageExtractor(TestPageExtractorBase):
         assert df_2.shape[1] == self.extractor_2.pdf_columns_count
         assert df_2.shape[0] > df_1.shape[0]
 
-        assert df_1.isna().sum().sum() == df_1.shape[0]
-        assert df_2.isna().sum().sum() == df_2.shape[0]
+        assert df_1.iloc[:, :-1].isna().sum().sum() == 0
+        assert df_2.iloc[:, :-1].isna().sum().sum() == 0
 
 
 class TestOzonBankPageExtractor(TestPageExtractorBase):
@@ -177,3 +178,37 @@ class TestOzonBankPageExtractor(TestPageExtractorBase):
 
         assert df_1.isna().sum().sum() == 0
         assert df_2.isna().sum().sum() == 0
+
+
+class TestYandexPageExtractor(TestPageExtractorBase):
+    __test__ = True
+    filename = "yandex_1.pdf"
+    extractor_class = YandexTablePageExtractor
+
+    def test_properties(self) -> None:
+        assert self.extractor_1.pdf_columns_word_count == 19
+        assert self.extractor_2.pdf_columns_word_count == 19
+
+    def test_get_first_cell(self) -> None:
+        words_before = len(self.extractor_1.words)
+        first_cell = self.extractor_1.locate_table()
+        assert first_cell.text == "Описание"
+        assert 0 < words_before - len(self.extractor_1.words) < 80
+
+        words_before = len(self.extractor_2.words)
+        first_cell = self.extractor_2.locate_table()
+        assert first_cell.text == "Описание"
+        assert words_before - len(self.extractor_2.words) == 0
+
+    def test_convert_to_frame(self) -> None:
+        df_1 = self.extractor_1.convert_to_frame()
+        df_2 = self.extractor_2.convert_to_frame()
+
+        assert isinstance(df_1, pd.DataFrame)
+        assert isinstance(df_2, pd.DataFrame)
+
+        assert df_1.shape[1] == self.extractor_1.pdf_columns_count
+        assert df_2.shape[1] == self.extractor_2.pdf_columns_count
+
+        assert df_1.iloc[:, [0, 1, 2, 4, 5]].isna().sum().sum() == 0
+        assert df_2.iloc[:, [0, 1, 2, 4, 5]].isna().sum().sum() == 0

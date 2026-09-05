@@ -40,11 +40,12 @@ class OzonBankTablePageExtractor(BaseTablePageExtractor):
         df = df[(df["x0"] == df["x0"].min()).cumsum() == 1]
         df = df[df["text"].str.capitalize() == df["text"]]
         df["cell"] = np.arange(df.shape[0])
+
         bounds_df = df.groupby("cell", sort=False)["x0"].min().rename("left").reset_index(drop=False)
         bounds_df["right"] = bounds_df["left"].shift(-1).fillna(np.inf)
-
         if bounds_df.shape[0] != self.pdf_columns_count:
             raise ValueError("number of columns does not match expected: {} != {}".format(df.shape[0], self.pdf_columns_count))
+
         return [CellBoundary(**bound) for bound in bounds_df.sort_values("cell")[["left", "right"]].to_dict(orient="records")]
 
     def words_to_frame(self, bounds: List[CellBoundary]) -> pd.DataFrame:
