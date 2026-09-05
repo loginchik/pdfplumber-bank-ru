@@ -8,6 +8,12 @@ from .schemas import Word
 
 
 class BasicProcessor:
+    """
+    Базовый обработчик
+
+    Задает общие для разных структур статичные методы и параметры класса
+    """
+
     BANK_NAME: BankNameEnum = None
 
     def __init__(self, **kwargs) -> None:

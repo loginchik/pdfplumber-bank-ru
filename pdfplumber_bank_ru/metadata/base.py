@@ -14,6 +14,10 @@ from commons.schemas import Word
 
 @dataclass(frozen=True)
 class Metadata:
+    """
+    Структура информации, извлекаемой с первой страницы банковской выписки
+    """
+
     owner_name: str
     account_number: int
     bank_name: BankNameEnum
@@ -22,6 +26,15 @@ class Metadata:
 
 
 class BaseMetadataExtractor(ABC, BasicProcessor):
+    """
+    Базовый класс для обработчика метаданных выписки
+
+    Основной вызываемый метод - ``extract_from_file`` - позволяет открыть PDF-документ
+    по заданному файлу и с помощью метода ``extract_from_pdf`` извлечь из него информацию
+    о банковской выписке. Также определяет абстрактные методы для обработчиков выписок
+    из конкретных банков
+    """
+
     BANK_NAME: BankNameEnum = None
 
     def extract_from_file(self, filepath: Path) -> Metadata:
@@ -53,6 +66,13 @@ class BaseMetadataExtractor(ABC, BasicProcessor):
 
     @staticmethod
     def _look_up_collocation(collocation: str, words: List[Word]) -> int:
+        """
+        Последовательно перебирает набор слов до тех пор, пока не найдёт заданное словосочетание
+
+        :param collocation: целевое словосочетание
+        :param words: слова для перебора
+        :return: индекс слова в наборе, с которого начинается словосочетание
+        """
         collocation_words = collocation.split(" ")
 
         for i, word in enumerate(words):
