@@ -5,6 +5,7 @@ from typing import Union
 import pandas as pd
 import pytest
 
+from commons.enums import TableColumnEnum
 from pdfplumber_bank_ru.table.alfabank import AlfaBankTableExtractor
 from pdfplumber_bank_ru.table.ozonbank import OzonBankTableExtractor
 from pdfplumber_bank_ru.table.raiffeisen import RaiffeisenTableExtractor
@@ -28,6 +29,8 @@ class TestTableExtractorBase(ABC):
         assert isinstance(df, pd.DataFrame)
         assert df.shape[0] > 0
         assert all(isinstance(x, str) for x in df.columns)
+
+        assert df[TableColumnEnum.bank_name.value].values[0] == self.processor_class.BANK_NAME
 
 
 class TestAlfabankTableExtractor(TestTableExtractorBase):
