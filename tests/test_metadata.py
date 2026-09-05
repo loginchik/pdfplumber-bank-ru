@@ -7,6 +7,7 @@ import pytest
 
 from pdfplumber_bank_ru.metadata.base import Metadata
 from pdfplumber_bank_ru.metadata.tbank import TBankMetadataExtractor
+from pdfplumber_bank_ru.metadata.raiffeisen import RaiffeisenMetadataExtractor
 
 
 class TestMetadataExtractorBase:
@@ -30,6 +31,7 @@ class TestMetadataExtractorBase:
     def test_get_account_number(self) -> None:
         value = self.extractor.get_account_number(self.words_per_page)
         assert isinstance(value, int)
+        assert len(str(value)) == 20
 
     def test_get_issued_date(self) -> None:
         value = self.extractor.get_issued_date(self.words_per_page)
@@ -51,3 +53,9 @@ class TestTBankMetadataExtractor(TestMetadataExtractorBase):
     __test__ = True
     filename = "tbank_1.pdf"
     extractor_class = TBankMetadataExtractor
+
+
+class TestRaiffeisenMetadataExtractor(TestMetadataExtractorBase):
+    __test__ = True
+    filename = "raiffeisen_1.pdf"
+    extractor_class = RaiffeisenMetadataExtractor

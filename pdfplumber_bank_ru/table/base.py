@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from logging import getLogger
 from pathlib import Path
 from typing import Tuple, List, Optional, Any
 
@@ -8,11 +7,12 @@ import pdfplumber
 from pdfplumber.pdf import PDF
 from pdfplumber.page import Page
 
+from commons.base import BasicProcessor
 from commons.enums import BankNameEnum, TableColumnEnum
 from commons.schemas import Word, CellBoundary
 
 
-class BaseTablePageExtractor(ABC):
+class BaseTablePageExtractor(ABC, BasicProcessor):
     """
     Обработчик одной страницы банковской выписки
 
@@ -23,9 +23,8 @@ class BaseTablePageExtractor(ABC):
     BANK_NAME: BankNameEnum = None
 
     def __init__(self, page: Page) -> None:
-        self.logger = getLogger(self.__class__.__name__)
+        super().__init__(page=page)
         self.words: List[Word] = self.get_words(page)
-
         self.__boundaries: Optional[List[CellBoundary]] = None
         self.__table_located: bool = False
 
@@ -112,18 +111,6 @@ class BaseTablePageExtractor(ABC):
         raise ValueError()
 
     @staticmethod
-    def get_words(page: Page, x_tolerance: int = 3, y_tolerance: int = 3) -> List[Word]:
-        """
-        Извлекает все слова с текущей страницы с заданной толерантностью в пикселях
-
-        :param page: страница pdfplumber
-        :param x_tolerance: горизонтальная толерантность
-        :param y_tolerance: вертикальная толерантность
-        :return: слова со страницы
-        """
-        return [Word.from_dict(w) for w in page.extract_words(x_tolerance=x_tolerance, y_tolerance=y_tolerance)]
-
-    @staticmethod
     def bound_to_cell(word: pd.Series, bounds: List[CellBoundary]) -> Optional[int]:
         """
         Находит предел, в рамках которого лежит текущее слово
@@ -135,7 +122,7 @@ class BaseTablePageExtractor(ABC):
         return next((i for i, bound in enumerate(bounds) if word["x0"] >= bound.left and word["x1"] <= bound.right), None)
 
 
-class BaseTableExtractor(ABC):
+class BaseTableExtractor(ABC, BasicProcessor):
     """
     Обработчик PDF-документа выписки из банка: извлекает таблицы с транзакциями
     с каждой страницы отдельным обработчиком `PAGE_CLASS` и образует из них один общий фрейм
@@ -145,9 +132,6 @@ class BaseTableExtractor(ABC):
 
     page_processor_class: BaseTablePageExtractor = None
     table_columns: Tuple[TableColumnEnum] = None
-
-    def __init__(self) -> None:
-        self.logger = getLogger(self.__class__.__name__)
 
     def extract_from_file(self, filepath: Path) -> pd.DataFrame:
         """
