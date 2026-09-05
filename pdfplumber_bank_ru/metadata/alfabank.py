@@ -37,7 +37,7 @@ class AlfaBankMetadataExtractor(BaseMetadataExtractor):
         except IndexError as e:
             raise IndexError("no owner name found on first page") from e
 
-        current_words = current_words[label_i + 1:]
+        current_words = current_words[label_i + 1 :]
 
         name_words = [current_words[0]]
         current_words = current_words[1:]
@@ -47,7 +47,7 @@ class AlfaBankMetadataExtractor(BaseMetadataExtractor):
             else:
                 break
 
-        owner_name = ' '.join(w.text for w in name_words)
+        owner_name = " ".join(w.text for w in name_words)
         return owner_name
 
     def get_period(self, words_per_page: Dict[int, List[Word]]) -> Tuple[dt.date, dt.date]:
