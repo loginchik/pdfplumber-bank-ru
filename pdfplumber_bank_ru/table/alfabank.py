@@ -60,4 +60,13 @@ class AlfaBankTableExtractor(BaseTableExtractor):
     )
 
     def _update_merged_pages(self, df: pd.DataFrame) -> pd.DataFrame:
+        df[TableColumnEnum.date] = pd.to_datetime(df[TableColumnEnum.date], format="%d.%m.%Y", errors="coerce")
+        df = df.dropna(subset=[TableColumnEnum.date])
+
+        df[TableColumnEnum.money_acc_curr] = pd.to_numeric(
+            df[TableColumnEnum.money_acc_curr].str.replace(r"[^0-9\-\.,]", "", regex=True).str.replace(",", "."),
+            errors="coerce",
+        )
+        df[TableColumnEnum.card_number] = df[TableColumnEnum.details].str.extract(r"(2\d+\++\d+)")[0]
+
         return df

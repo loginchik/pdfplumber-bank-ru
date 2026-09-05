@@ -68,4 +68,19 @@ class TBankTableExtractor(BaseTableExtractor):
     )
 
     def _update_merged_pages(self, df: pd.DataFrame) -> pd.DataFrame:
+        df[TableColumnEnum.date] = pd.to_datetime(df[TableColumnEnum.date], format="%d.%m.%Y %H:%M")
+        df[TableColumnEnum.date_performed] = pd.to_datetime(df[TableColumnEnum.date_performed], format="%d.%m.%Y %H:%M")
+        df = df.dropna(subset=[TableColumnEnum.date])
+
+        df[TableColumnEnum.currency] = df[TableColumnEnum.money_op_curr].str[-1]
+        for col in [TableColumnEnum.money_op_curr, TableColumnEnum.money_acc_curr]:
+            df[col] = pd.to_numeric(df[col].str.replace(r"[^0-9\-\.,]", "", regex=True).str.replace(",", "."), errors="coerce")
+
+        df[TableColumnEnum.card_number] = (
+            df[TableColumnEnum.card_number].str.replace(r"[^0-9]", "", regex=True).str.strip().mask(lambda x: x == "", np.nan)
+        )
+
+        df[TableColumnEnum.to_account] = df[TableColumnEnum.details].str.extract(r"на договор (\d+)")
+        df[TableColumnEnum.from_account] = df[TableColumnEnum.details].str.extract(r"с договора (\d+)")
+
         return df

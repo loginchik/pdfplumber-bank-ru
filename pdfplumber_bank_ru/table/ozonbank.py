@@ -74,4 +74,13 @@ class OzonBankTableExtractor(BaseTableExtractor):
     )
 
     def _update_merged_pages(self, df: pd.DataFrame) -> pd.DataFrame:
+        df[TableColumnEnum.date] = pd.to_datetime(df[TableColumnEnum.date], format="%d.%m.%Y %H:%M:%S", errors="coerce")
+
+        df[TableColumnEnum.currency] = df[TableColumnEnum.money_op_curr].str[-1]
+        for col in [TableColumnEnum.money_op_curr, TableColumnEnum.money_acc_curr]:
+            df[col] = pd.to_numeric(df[col].str.replace(r"[^-+,\.0-9]", "", regex=True).str.replace(",", "."), errors="coerce")
+
+        df[TableColumnEnum.details] = df[TableColumnEnum.details].str.replace(r"(\n|\s+)", " ", regex=True).str.strip()
+        df[TableColumnEnum.order_number] = df[TableColumnEnum.details].str.extract(r"заказ . ([\d\-]+)")
+
         return df

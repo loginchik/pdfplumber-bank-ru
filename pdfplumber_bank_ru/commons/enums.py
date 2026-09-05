@@ -20,6 +20,7 @@ class TableColumnEnum(Enum):
     date = "date"
     date_performed = "date_performed"
     document_number = "document_number"
+    order_number = "order_number"
     details = "details"
     money_acc_curr = "money_amount_account_currency"
     money_op_curr = "money_amount_operation_currency"
@@ -27,3 +28,5 @@ class TableColumnEnum(Enum):
     card_number = "card_number"
     page_no = "page"
     bank_name = "bank_name"
+    to_account = "to_account"
+    from_account = "from_account"

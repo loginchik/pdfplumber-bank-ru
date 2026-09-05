@@ -66,4 +66,27 @@ class RaiffeisenTableExtractor(BaseTableExtractor):
     )
 
     def _update_merged_pages(self, df: pd.DataFrame) -> pd.DataFrame:
+        df[[TableColumnEnum.date, TableColumnEnum.date_performed]] = (
+            df[TableColumnEnum.date].str.extract(r"(\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}) (.+)").apply(pd.Series)
+        )
+        df[TableColumnEnum.date] = pd.to_datetime(df[TableColumnEnum.date].str.strip(), format="%d.%m.%Y %H:%M")
+        df[TableColumnEnum.date_performed] = pd.to_datetime(
+            df[TableColumnEnum.date_performed].str.strip(), format="%d.%m.%Y", errors="coerce"
+        )
+        df = df.dropna(subset=[TableColumnEnum.date])
+
+        df[TableColumnEnum.currency] = df[TableColumnEnum.money_op_curr].str[-1]
+        for col in [TableColumnEnum.money_op_curr, TableColumnEnum.money_acc_curr]:
+            df[col] = pd.to_numeric(df[col].str.replace(r"[^-+,0-9]", "", regex=True).str.replace(",", "."), errors="coerce")
+
+        df[TableColumnEnum.details] = df[TableColumnEnum.details].str.replace(r"(\n|\s+)", " ", regex=True).str.strip()
+        df[TableColumnEnum.from_account] = df[TableColumnEnum.details].str.extract(r"Со сч[ёе]та\: (\d*\**\d+)")
+        df[TableColumnEnum.to_account] = df[TableColumnEnum.details].str.extract(r"На сч[ёе]т\: (\d*\**\d+)")
+        df[TableColumnEnum.to_account] = df[TableColumnEnum.to_account].fillna(
+            df[TableColumnEnum.details].str.extract(r"номер счета получателя\s?\-\s?(\d+)").iloc[:, 0]
+        )
+
+        df[TableColumnEnum.card_number] = df[TableColumnEnum.card_number].str.strip().mask(lambda s: s == "", np.nan)
+        df[TableColumnEnum.document_number] = df[TableColumnEnum.document_number].str.strip().mask(lambda s: s == "", np.nan)
+
         return df

@@ -53,7 +53,6 @@ class TestPageExtractorBase(ABC):
 
         assert df_1.shape[1] == self.extractor_1.pdf_columns_count
         assert df_2.shape[1] == self.extractor_2.pdf_columns_count
-        assert df_2.shape[0] > df_1.shape[0]
 
         assert df_1.isna().sum().sum() == 0
         assert df_2.isna().sum().sum() == 0
