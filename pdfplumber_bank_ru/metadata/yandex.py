@@ -1,5 +1,4 @@
 import datetime as dt
-import re
 from typing import Dict, List, Tuple
 
 from commons.enums import BankNameEnum
@@ -22,14 +21,7 @@ class YandexMetadataExtractor(BaseMetadataExtractor):
         :return: номер счёта
         :raise IndexError: номер счёта не найден
         """
-        current_words = words_per_page[0]
-        try:
-            _, prev_text_end_i = self._look_up_collocation("Дата рождения", current_words)
-        except IndexError as e:
-            raise IndexError("no account number found on first page") from e
-
-        account_number = int(re.sub("[^0-9]", "", current_words[prev_text_end_i + 2].text))
-        return account_number
+        return self._get_account_number(words_per_page[0], "Дата рождения", 2)
 
     def get_issued_date(self, words_per_page: Dict[int, List[Word]]) -> dt.date:
         """
@@ -39,14 +31,7 @@ class YandexMetadataExtractor(BaseMetadataExtractor):
         :return: дата формирования выписки
         :raise IndexError: дата формирования выписки не найдена
         """
-        current_words = words_per_page[0]
-        try:
-            _, collocation_end_i = self._look_up_collocation("Дата", current_words)
-        except IndexError as e:
-            raise IndexError("no issued date found on first page") from e
-
-        issued_date = current_words[collocation_end_i]
-        return dt.datetime.strptime(issued_date.text, "%d.%m.%Y").date()
+        return self._get_issued_date(words_per_page[0], "Дата")
 
     def get_owner_name(self, words_per_page: Dict[int, List[Word]]) -> str:
         """
@@ -59,20 +44,11 @@ class YandexMetadataExtractor(BaseMetadataExtractor):
         current_words = words_per_page[0]
 
         try:
-            _, prev_text_end_i = self._look_up_collocation("(далее — «Банк»),", current_words)
+            _, name_start_i = self._look_up_collocation("(далее — «Банк»),", current_words)
         except IndexError as e:
             raise IndexError("no owner name found on first page") from e
 
-        current_words = current_words[prev_text_end_i:]
-
-        name_words = [current_words[0]]
-        current_words = current_words[1:]
-        for word in current_words:
-            if word.top == name_words[0].top and word.x0 - name_words[-1].x1 < 3:
-                name_words.append(word)
-            else:
-                break
-
+        name_words = self._get_related_words_in_line(current_words[name_start_i:])
         owner_name = " ".join(w.text for w in name_words)
         return owner_name
 
@@ -85,15 +61,4 @@ class YandexMetadataExtractor(BaseMetadataExtractor):
         :return: период выписки
         :raise IndexError: даты периода выписки не найдены
         """
-        current_words = words_per_page[0]
-        try:
-            _, collocation_end_i = self._look_up_collocation("Выписка по Договору за период с", current_words)
-        except IndexError as e:
-            raise IndexError("no period found on first page") from e
-
-        start_date = current_words[collocation_end_i]
-        end_date = current_words[collocation_end_i + 2]
-
-        start_date = dt.datetime.strptime(start_date.text, "%d.%m.%Y").date()
-        end_date = dt.datetime.strptime(end_date.text, "%d.%m.%Y").date()
-        return start_date, end_date
+        return self._get_period(words_per_page[0], "Выписка по Договору за период с")

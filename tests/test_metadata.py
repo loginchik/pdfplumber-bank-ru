@@ -5,7 +5,8 @@ from typing import Union
 import pdfplumber
 import pytest
 
-from pdfplumber_bank_ru.metadata.base import Metadata
+from pdfplumber_bank_ru.commons.schemas import Word
+from pdfplumber_bank_ru.metadata.base import Metadata, BaseMetadataExtractor
 from pdfplumber_bank_ru.metadata.tbank import TBankMetadataExtractor
 from pdfplumber_bank_ru.metadata.raiffeisen import RaiffeisenMetadataExtractor
 from pdfplumber_bank_ru.metadata.alfabank import AlfaBankMetadataExtractor
@@ -50,6 +51,33 @@ class TestMetadataExtractorBase:
     def test_get_owner_name(self) -> None:
         value = self.extractor.get_owner_name(self.words_per_page)
         assert isinstance(value, str)
+
+
+class TestBaseMetadataExtractor:
+    @pytest.mark.parametrize("collocation", ["this is text", "another text", "another one"])
+    @pytest.mark.parametrize("before", list(range(1, 10, 2)))
+    def test_look_up_collocation_success(self, collocation: str, before: int) -> None:
+        words = [Word(text="a", x0=0.0, x1=1.0, top=1.0)] * before
+        words += [Word(text=w, x0=0.0, x1=1.0, top=1.0) for w in collocation.split()]
+        words += [Word(text="a", x0=0.0, x1=1.0, top=1.0)] * 10
+
+        result = BaseMetadataExtractor._look_up_collocation(collocation, words)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        assert all(isinstance(r, int) for r in result)
+
+        assert result[0] == before
+        assert result[1] == before + len(collocation.split())
+
+    def test_get_related_words_in_line(self) -> None:
+        words = [Word(text="a", x0=i, x1=i + 0.5, top=1) for i in range(10)]
+        words += [Word(text="b", x0=i, x1=i + 0.5, top=1) for i in range(15, 25)]
+        words += [Word(text="c", x0=i, x1=i + 0.5, top=2) for i in range(10)]
+
+        result = BaseMetadataExtractor._get_related_words_in_line(words, x_tolerance=3)
+        assert isinstance(result, list)
+        assert len(result) == 10
+        assert "".join(w.text for w in result) == "a" * 10
 
 
 class TestTBankMetadataExtractor(TestMetadataExtractorBase):
