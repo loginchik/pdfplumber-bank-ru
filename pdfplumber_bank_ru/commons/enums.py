@@ -10,6 +10,7 @@ class BankNameEnum(str, Enum):
     OZON = "Ozon Банк"
     RAIF = "Райффайзенбанк"
     TBANK = "Т-Банк"
+    YANDEX = "Яндекс Банк"
 
 
 class TableColumnEnum(Enum):
@@ -20,6 +21,7 @@ class TableColumnEnum(Enum):
     date = "date"
     date_performed = "date_performed"
     document_number = "document_number"
+    service_name = "service_name"
     order_number = "order_number"
     details = "details"
     money_acc_curr = "money_amount_account_currency"

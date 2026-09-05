@@ -9,6 +9,7 @@ from pdfplumber_bank_ru.table.alfabank import AlfaBankTableExtractor
 from pdfplumber_bank_ru.table.ozonbank import OzonBankTableExtractor
 from pdfplumber_bank_ru.table.raiffeisen import RaiffeisenTableExtractor
 from pdfplumber_bank_ru.table.tbank import TBankTableExtractor
+from pdfplumber_bank_ru.table.yandex import YandexTableExtractor
 
 
 class TestTableExtractorBase(ABC):
@@ -51,3 +52,9 @@ class TestTBankTableExtractor(TestTableExtractorBase):
     __test__ = True
     filename = "tbank_1.pdf"
     processor_class = TBankTableExtractor
+
+
+class TestYandexTableExtractor(TestTableExtractorBase):
+    __test__ = True
+    filename = "yandex_1.pdf"
+    processor_class = YandexTableExtractor
