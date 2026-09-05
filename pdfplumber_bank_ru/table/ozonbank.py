@@ -10,6 +10,12 @@ from .base import BaseTablePageExtractor, BaseTableExtractor
 
 
 class OzonBankTablePageExtractor(BaseTablePageExtractor):
+    """
+    Обработчик одной страницы банковской выписки Ozon Банка
+
+    Извлекает содержимое страницы и преобразует в ``pandas.DataFrame``
+    """
+
     BANK_NAME = BankNameEnum.OZON
 
     @property
@@ -23,6 +29,16 @@ class OzonBankTablePageExtractor(BaseTablePageExtractor):
         )
 
     def _locate_table(self) -> Tuple[Word, int]:
+        """
+        Определяет начало таблицы по части названия первой колонки
+
+        Метод применим только к первой странице банковской выписки,
+        так как последующие страницы не содержат названия колонок.
+        Для остальных страниц выписки предполагает, что первое слово
+        на странице, если является датой, - первая ячейка таблицы
+
+        :return: координаты первой ячейки таблицы
+        """
         try:
             return self._get_first_cell(words=self.words, target_words=self.pdf_columns[0].split()[:2])
         except ValueError as e:
@@ -33,6 +49,15 @@ class OzonBankTablePageExtractor(BaseTablePageExtractor):
             raise e
 
     def _get_cell_boundaries(self) -> List[CellBoundary]:
+        """
+        Определяет границы ячеек искомой таблицы
+
+        Метод применим только к первой странице выписки: последующие страницы
+        не содержат названия колонок
+
+        :return: границы ячеек в таблице слева направо
+        :raise ValueError:
+        """
         if re.match(r"^(\d{2}\.){2}\d{4}$", self.words[0].text):
             raise ValueError("boundaries must be collected on the first page")
 
@@ -49,6 +74,12 @@ class OzonBankTablePageExtractor(BaseTablePageExtractor):
         return [CellBoundary(**bound) for bound in bounds_df.sort_values("cell")[["left", "right"]].to_dict(orient="records")]
 
     def words_to_frame(self, bounds: List[CellBoundary]) -> pd.DataFrame:
+        """
+        Преобразует содержимое страницы в таблицу с данными транзакций
+
+        :param bounds: границы ячеек
+        :return: фрейм с транзакциями с этой страницы
+        """
         words_df = pd.DataFrame(self.words)
 
         words_df["cell"] = words_df.apply(lambda row: self.bound_to_cell(row, bounds), axis=1)
@@ -64,6 +95,12 @@ class OzonBankTablePageExtractor(BaseTablePageExtractor):
 
 
 class OzonBankTableExtractor(BaseTableExtractor):
+    """
+    Обработчик PDF-выписки из Ozon Банка
+
+    Извлекает с каждой страницы содержимое таблицы с транзакциями и образует ``pandas.DataFrame``
+    """
+
     BANK_NAME = BankNameEnum.OZON
     page_processor_class = OzonBankTablePageExtractor
     table_columns = (
@@ -75,6 +112,13 @@ class OzonBankTableExtractor(BaseTableExtractor):
     )
 
     def _update_merged_pages(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Преобразует типы данных в объединённом фрейме, очищает невалидные значения
+        и насыщает таблицу дополнительными данными из деталей транзакции
+
+        :param df: исходный общий фрейм
+        :return: итоговый общий фрейм
+        """
         df[TableColumnEnum.date] = pd.to_datetime(df[TableColumnEnum.date], format="%d.%m.%Y %H:%M:%S", errors="coerce")
 
         df[TableColumnEnum.currency] = df[TableColumnEnum.money_op_curr].str[-1]

@@ -54,6 +54,12 @@ class BaseTablePageExtractor(ABC, BasicProcessor):
         return self.words_to_frame(bounds=boundaries)
 
     def get_cell_boundaries(self) -> List[CellBoundary]:
+        """
+        Возвращает или уже определённые, или впервые определённые границы
+        ячеек в таблице на текущей странице
+
+        :return: границы ячеек в таблице на странице
+        """
         if self.__boundaries is None:
             if not self.__table_located:
                 self.locate_table()
@@ -61,6 +67,12 @@ class BaseTablePageExtractor(ABC, BasicProcessor):
         return self.__boundaries
 
     def locate_table(self) -> Word:
+        """
+        Определяет начало таблицы и обрезает внутренний список слов так,
+        чтобы он начинался сразу с таблицы
+
+        :return: первое слово в таблице
+        """
         word, i = self._locate_table()
         self.words = self.words[i:]
         self.__table_located = True
@@ -79,6 +91,9 @@ class BaseTablePageExtractor(ABC, BasicProcessor):
 
     @property
     def pdf_columns_count(self) -> int:
+        """
+        Количество колонок в таблице в PDF-файле
+        """
         return len(self.pdf_columns)
 
     @abstractmethod
@@ -141,6 +156,7 @@ class BaseTableExtractor(ABC, BasicProcessor):
         :return: образованный фрейм
         :raise ValueError: ни одна таблица не образована
         """
+        self.validate_pdf_file(filepath)
         with pdfplumber.open(filepath) as pdf:
             return self.extract_from_pdf(pdf)
 
