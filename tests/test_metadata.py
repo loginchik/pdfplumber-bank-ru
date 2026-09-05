@@ -10,6 +10,7 @@ from pdfplumber_bank_ru.metadata.tbank import TBankMetadataExtractor
 from pdfplumber_bank_ru.metadata.raiffeisen import RaiffeisenMetadataExtractor
 from pdfplumber_bank_ru.metadata.alfabank import AlfaBankMetadataExtractor
 from pdfplumber_bank_ru.metadata.ozonbank import OzonBankMetadataExtractor
+from pdfplumber_bank_ru.metadata.yandex import YandexMetadataExtractor
 
 
 class TestMetadataExtractorBase:
@@ -73,3 +74,14 @@ class TestOzonBankMetadataExtractor(TestMetadataExtractorBase):
     __test__ = True
     filename = "ozon_1.pdf"
     extractor_class = OzonBankMetadataExtractor
+
+
+class TestYandexMetadataExtractor(TestMetadataExtractorBase):
+    __test__ = True
+    filename = "yandex_1.pdf"
+    extractor_class = YandexMetadataExtractor
+
+    def test_get_account_number(self) -> None:
+        value = self.extractor.get_account_number(self.words_per_page)
+        assert isinstance(value, int)
+        assert len(str(value)) == 17
