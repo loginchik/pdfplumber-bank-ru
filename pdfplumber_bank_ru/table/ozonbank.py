@@ -48,7 +48,7 @@ class OzonBankTablePageExtractor(BaseTablePageExtractor):
                 return word, 0
             raise e
 
-    def _get_cell_boundaries(self) -> List[CellBoundary]:
+    def _get_cell_boundaries(self) -> pd.DataFrame:
         """
         Определяет границы ячеек искомой таблицы
 
@@ -67,11 +67,7 @@ class OzonBankTablePageExtractor(BaseTablePageExtractor):
         df["cell"] = np.arange(df.shape[0])
 
         bounds_df = df.groupby("cell", sort=False)["x0"].min().rename("left").reset_index(drop=False)
-        bounds_df["right"] = bounds_df["left"].shift(-1).fillna(np.inf)
-        if bounds_df.shape[0] != self.pdf_columns_count:
-            raise ValueError("number of columns does not match expected: {} != {}".format(df.shape[0], self.pdf_columns_count))
-
-        return [CellBoundary(**bound) for bound in bounds_df.sort_values("cell")[["left", "right"]].to_dict(orient="records")]
+        return bounds_df
 
     def words_to_frame(self, bounds: List[CellBoundary]) -> pd.DataFrame:
         """
@@ -80,18 +76,17 @@ class OzonBankTablePageExtractor(BaseTablePageExtractor):
         :param bounds: границы ячеек
         :return: фрейм с транзакциями с этой страницы
         """
-        words_df = pd.DataFrame(self.words)
+        df = pd.DataFrame(self.words)
 
-        words_df["cell"] = words_df.apply(lambda row: self.bound_to_cell(row, bounds), axis=1)
-        words_df = words_df.dropna(subset="cell").reset_index(drop=True)
-        words_df["cell"] = words_df["cell"].astype(int)
-        words_df["row"] = ((words_df["top"] - words_df["top"].shift(1)).abs() > 15).cumsum()
+        df["cell"] = df.apply(lambda row: self.bound_to_cell(row, bounds), axis=1)
+        df = df.dropna(subset="cell").reset_index(drop=True)
+        df["cell"] = df["cell"].astype(int)
+        df["row"] = ((df["top"] - df["top"].shift(1)).abs() > 15).cumsum()
 
-        words_df = words_df.groupby(["row", "cell"])["text"].agg(lambda x: " ".join(x)).unstack("cell")
-        words_df.columns = self.pdf_columns
-        words_df = words_df[words_df[self.pdf_columns[0]].str.match(r"^\d{2}\.\d{2}.*")].reset_index(drop=True)
+        df = self._group_df_to_records(df)
+        df = df[df[self.pdf_columns[0]].str.match(r"^\d{2}\.\d{2}.*")].reset_index(drop=True)
 
-        return words_df
+        return df
 
 
 class OzonBankTableExtractor(BaseTableExtractor):
@@ -121,10 +116,7 @@ class OzonBankTableExtractor(BaseTableExtractor):
         """
         df[TableColumnEnum.date] = pd.to_datetime(df[TableColumnEnum.date], format="%d.%m.%Y %H:%M:%S", errors="coerce")
 
-        df[TableColumnEnum.currency] = df[TableColumnEnum.money_op_curr].str[-1]
-        for col in [TableColumnEnum.money_op_curr, TableColumnEnum.money_acc_curr]:
-            df[col] = pd.to_numeric(df[col].str.replace(r"[^-+,\.0-9]", "", regex=True).str.replace(",", "."), errors="coerce")
-
+        df = self._update_money_amount_columns(df, additional_replacements=None)
         df[TableColumnEnum.details] = df[TableColumnEnum.details].str.replace(r"(\n|\s+)", " ", regex=True).str.strip()
         df[TableColumnEnum.order_number] = df[TableColumnEnum.details].str.extract(r"заказ . ([\d\-]+)")
 

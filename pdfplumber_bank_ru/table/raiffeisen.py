@@ -36,7 +36,7 @@ class RaiffeisenTablePageExtractor(BaseTablePageExtractor):
         """
         return self._get_first_cell(words=self.words, target_words=self.pdf_columns[0].split()[:2])
 
-    def _get_cell_boundaries(self) -> List[CellBoundary]:
+    def _get_cell_boundaries(self) -> pd.DataFrame:
         """
         Определяет границы ячеек искомой таблицы
 
@@ -48,12 +48,7 @@ class RaiffeisenTablePageExtractor(BaseTablePageExtractor):
         df["cell"] = np.arange(df.shape[0])
 
         bounds_df = df.groupby("cell", sort=False)["x0"].min().rename("left").reset_index(drop=False)
-        if (determined_columns_count := bounds_df["left"].nunique()) != self.pdf_columns_count:
-            raise ValueError(
-                "number of columns does not match expected: {} != {}".format(determined_columns_count, self.pdf_columns_count)
-            )
-        bounds_df["right"] = bounds_df["left"].shift(-1).fillna(np.inf)
-        return [CellBoundary(**bound) for bound in bounds_df.sort_values("cell")[["left", "right"]].to_dict(orient="records")]
+        return bounds_df
 
     def words_to_frame(self, bounds: List[CellBoundary]) -> pd.DataFrame:
         """
@@ -62,18 +57,17 @@ class RaiffeisenTablePageExtractor(BaseTablePageExtractor):
         :param bounds: границы ячеек
         :return: фрейм с транзакциями с этой страницы
         """
-        words_df = pd.DataFrame(self.words[self.pdf_columns_word_count :])
+        df = pd.DataFrame(self.words[self.pdf_columns_word_count :])
 
-        words_df["cell"] = words_df.apply(lambda row: self.bound_to_cell(row, bounds), axis=1)
-        words_df = words_df.dropna(subset="cell").reset_index(drop=True)
-        words_df["cell"] = words_df["cell"].astype(int)
-        words_df["row"] = ((words_df["top"] - words_df["top"].shift(1)).abs() > 15).cumsum()
+        df["cell"] = df.apply(lambda row: self.bound_to_cell(row, bounds), axis=1)
+        df = df.dropna(subset="cell").reset_index(drop=True)
+        df["cell"] = df["cell"].astype(int)
+        df["row"] = ((df["top"] - df["top"].shift(1)).abs() > 15).cumsum()
 
-        words_df = words_df.groupby(["row", "cell"])["text"].agg(lambda x: " ".join(x)).unstack("cell")
-        words_df.columns = self.pdf_columns
-        words_df = words_df[words_df[self.pdf_columns[0]].str.match(r"^\d{2}\.\d{2}.*")].reset_index(drop=True)
+        df = self._group_df_to_records(df)
+        df = df[df[self.pdf_columns[0]].str.match(r"^\d{2}\.\d{2}.*")].reset_index(drop=True)
 
-        return words_df
+        return df
 
 
 class RaiffeisenTableExtractor(BaseTableExtractor):
@@ -111,10 +105,7 @@ class RaiffeisenTableExtractor(BaseTableExtractor):
         )
         df = df.dropna(subset=[TableColumnEnum.date])
 
-        df[TableColumnEnum.currency] = df[TableColumnEnum.money_op_curr].str[-1]
-        for col in [TableColumnEnum.money_op_curr, TableColumnEnum.money_acc_curr]:
-            df[col] = pd.to_numeric(df[col].str.replace(r"[^-+,0-9]", "", regex=True).str.replace(",", "."), errors="coerce")
-
+        df = self._update_money_amount_columns(df, additional_replacements=None)
         df[TableColumnEnum.details] = df[TableColumnEnum.details].str.replace(r"(\n|\s+)", " ", regex=True).str.strip()
         df[TableColumnEnum.from_account] = df[TableColumnEnum.details].str.extract(r"Со сч[ёе]та\: (\d*\**\d+)")
         df[TableColumnEnum.to_account] = df[TableColumnEnum.details].str.extract(r"На сч[ёе]т\: (\d*\**\d+)")
