@@ -1,8 +1,11 @@
 [project]
 name = "pdfplumber-bank-ru"
-version = "0.0.1"
-description = "Add your description here"
+version = "0.1.0"
+
+authors = [{name = "Anna Loginova"}]
+description = "Convert accocunt statemenet to pandas DataFrame"
 readme = "README.md"
+
 requires-python = ">=3.11"
 dependencies = [
     "numpy>=2.0.0,<3.0.0",
@@ -16,6 +19,7 @@ lint = [
 ]
 test = [
     "pytest>=9.1.1",
+    "tox>=4.61.2",
 ]
 
 
@@ -32,3 +36,14 @@ ignore = [
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[tool.tox]
+requires = ["tox>=4.19"]
+env_list = ["3.14", "3.13", "3.12", "3.11"]
+
+[tool.tox.env_run_base]
+description = "Run test under {base_python}"
+allowlist_externals = [
+    "pytest",
+]
+commands = [["pytest"]]
