@@ -4,8 +4,8 @@ from typing import List, Tuple
 import pandas as pd
 import numpy as np
 
-from commons.schemas import Word, CellBoundary
-from commons.enums import BankNameEnum, TableColumnEnum
+from pdfplumber_bank_ru.commons.schemas import Word, CellBoundary
+from pdfplumber_bank_ru.commons.enums import BankNameEnum, TableColumnEnum
 from .base import BaseTablePageExtractor, BaseTableExtractor
 
 

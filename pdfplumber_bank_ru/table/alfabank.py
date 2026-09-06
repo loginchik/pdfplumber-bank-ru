@@ -2,8 +2,8 @@ from typing import List, Tuple
 
 import pandas as pd
 
-from commons.schemas import Word, CellBoundary
-from commons.enums import BankNameEnum, TableColumnEnum
+from pdfplumber_bank_ru.commons.schemas import Word, CellBoundary
+from pdfplumber_bank_ru.commons.enums import BankNameEnum, TableColumnEnum
 from .base import BaseTablePageExtractor, BaseTableExtractor
 
 

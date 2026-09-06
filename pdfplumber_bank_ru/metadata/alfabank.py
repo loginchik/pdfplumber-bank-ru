@@ -1,8 +1,8 @@
 import datetime as dt
 from typing import Dict, List, Tuple
 
-from commons.enums import BankNameEnum
-from commons.schemas import Word
+from pdfplumber_bank_ru.commons.enums import BankNameEnum
+from pdfplumber_bank_ru.commons.schemas import Word
 from .base import BaseMetadataExtractor
 
 

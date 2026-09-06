@@ -8,9 +8,9 @@ import pdfplumber
 from pdfplumber.pdf import PDF
 from pdfplumber.page import Page
 
-from commons.base import BasicProcessor
-from commons.enums import BankNameEnum, TableColumnEnum
-from commons.schemas import Word, CellBoundary
+from pdfplumber_bank_ru.commons.base import BasicProcessor
+from pdfplumber_bank_ru.commons.enums import BankNameEnum, TableColumnEnum
+from pdfplumber_bank_ru.commons.schemas import Word, CellBoundary
 
 
 class BaseTablePageExtractor(ABC, BasicProcessor):

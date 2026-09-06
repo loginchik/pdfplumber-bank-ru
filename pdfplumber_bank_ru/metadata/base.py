@@ -8,9 +8,9 @@ from typing import Tuple, Dict, List
 import pdfplumber
 from pdfplumber.pdf import PDF
 
-from commons.base import BasicProcessor
-from commons.enums import BankNameEnum
-from commons.schemas import Word
+from pdfplumber_bank_ru.commons.base import BasicProcessor
+from pdfplumber_bank_ru.commons.enums import BankNameEnum
+from pdfplumber_bank_ru.commons.schemas import Word
 
 
 @dataclass(frozen=True)

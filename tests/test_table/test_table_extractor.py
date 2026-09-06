@@ -5,7 +5,7 @@ from typing import Union
 import pandas as pd
 import pytest
 
-from commons.enums import TableColumnEnum
+from pdfplumber_bank_ru.commons.enums import TableColumnEnum
 from pdfplumber_bank_ru.table.alfabank import AlfaBankTableExtractor
 from pdfplumber_bank_ru.table.ozonbank import OzonBankTableExtractor
 from pdfplumber_bank_ru.table.raiffeisen import RaiffeisenTableExtractor
