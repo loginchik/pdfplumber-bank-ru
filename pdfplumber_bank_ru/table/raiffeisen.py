@@ -1,0 +1,119 @@
+from typing import List, Tuple
+
+import pandas as pd
+import numpy as np
+
+from pdfplumber_bank_ru.commons.schemas import Word, CellBoundary
+from pdfplumber_bank_ru.commons.enums import BankNameEnum, TableColumnEnum
+from .base import BaseTablePageExtractor, BaseTableExtractor
+
+
+class RaiffeisenTablePageExtractor(BaseTablePageExtractor):
+    """
+    Обработчик одной страницы банковской выписки Райффайзенбанка
+
+    Извлекает содержимое страницы и преобразует в ``pandas.DataFrame``
+    """
+
+    BANK_NAME = BankNameEnum.RAIF
+
+    @property
+    def pdf_columns(self) -> Tuple[str, ...]:
+        return (
+            "Дата операции",
+            "Номер документа",
+            "Сумма операции в валюте операции",
+            "Сумма операции в валюте счета",
+            "Детали операции",
+            "Номер карты",
+        )
+
+    def _locate_table(self) -> Tuple[Word, int]:
+        """
+        Определяет начало таблицы по полному названию первой колонки
+
+        :return: координаты первой ячейки таблицы
+        """
+        return self._get_first_cell(words=self.words, target_words=self.pdf_columns[0].split()[:2])
+
+    def _get_cell_boundaries(self) -> pd.DataFrame:
+        """
+        Определяет границы ячеек искомой таблицы
+
+        :return: границы ячеек в таблице слева направо
+        :raise ValueError:
+        """
+        df = pd.DataFrame(self.words[: self.pdf_columns_word_count])
+        df = df[(df["text"].str.capitalize() == df["text"])].drop_duplicates(subset="x0", keep="first")
+        df["cell"] = np.arange(df.shape[0])
+
+        bounds_df = df.groupby("cell", sort=False)["x0"].min().rename("left").reset_index(drop=False)
+        return bounds_df
+
+    def words_to_frame(self, bounds: List[CellBoundary]) -> pd.DataFrame:
+        """
+        Преобразует содержимое страницы в таблицу с данными транзакций
+
+        :param bounds: границы ячеек
+        :return: фрейм с транзакциями с этой страницы
+        """
+        df = pd.DataFrame(self.words[self.pdf_columns_word_count :])
+
+        df["cell"] = df.apply(lambda row: self.bound_to_cell(row, bounds), axis=1)
+        df = df.dropna(subset="cell").reset_index(drop=True)
+        df["cell"] = df["cell"].astype(int)
+        df["row"] = ((df["top"] - df["top"].shift(1)).abs() > 15).cumsum()
+
+        df = self._group_df_to_records(df)
+        df = df[df[self.pdf_columns[0]].str.match(r"^\d{2}\.\d{2}.*")].reset_index(drop=True)
+
+        return df
+
+
+class RaiffeisenTableExtractor(BaseTableExtractor):
+    """
+    Обработчик PDF-выписки из Райффайзенбанка
+
+    Извлекает с каждой страницы содержимое таблицы с транзакциями и образует ``pandas.DataFrame``
+    """
+
+    BANK_NAME = BankNameEnum.RAIF
+    page_processor_class = RaiffeisenTablePageExtractor
+    table_columns = (
+        TableColumnEnum.date,
+        TableColumnEnum.document_number,
+        TableColumnEnum.money_op_curr,
+        TableColumnEnum.money_acc_curr,
+        TableColumnEnum.details,
+        TableColumnEnum.card_number,
+    )
+
+    def _update_merged_pages(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Преобразует типы данных в объединённом фрейме, очищает невалидные значения
+        и насыщает таблицу дополнительными данными из деталей транзакции
+
+        :param df: исходный общий фрейм
+        :return: итоговый общий фрейм
+        """
+        df[[TableColumnEnum.date, TableColumnEnum.date_performed]] = (
+            df[TableColumnEnum.date].str.extract(r"(\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}) (.+)").apply(pd.Series)
+        )
+        df[TableColumnEnum.date] = pd.to_datetime(df[TableColumnEnum.date].str.strip(), format="%d.%m.%Y %H:%M")
+        df[TableColumnEnum.date_performed] = pd.to_datetime(
+            df[TableColumnEnum.date_performed].str.strip(), format="%d.%m.%Y", errors="coerce"
+        )
+        df = df.dropna(subset=[TableColumnEnum.date])
+
+        df = self._update_money_amount_columns(df, additional_replacements=None)
+        df[TableColumnEnum.details] = df[TableColumnEnum.details].str.replace(r"(\n|\s+)", " ", regex=True).str.strip()
+        df[TableColumnEnum.from_account] = df[TableColumnEnum.details].str.extract(r"Со сч[ёе]та\: (\d*\**\d+)")
+        df[TableColumnEnum.to_account] = df[TableColumnEnum.details].str.extract(r"На сч[ёе]т\: (\d*\**\d+)")
+        df[TableColumnEnum.to_account] = df[TableColumnEnum.to_account].fillna(
+            df[TableColumnEnum.details].str.extract(r"номер счета получателя\s?\-\s?(\d+)").iloc[:, 0]
+        )
+
+        df[TableColumnEnum.card_number] = df[TableColumnEnum.card_number].str.strip().mask(lambda s: s == "", np.nan)
+        df[TableColumnEnum.document_number] = df[TableColumnEnum.document_number].str.strip().mask(lambda s: s == "", np.nan)
+
+        return df

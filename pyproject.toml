@@ -1,8 +1,18 @@
 [project]
 name = "pdfplumber-bank-ru"
-version = "0.0.1"
-description = "Add your description here"
+version = "0.1.0"
+authors = [{name = "Anna Loginova"}]
+description = "Convert account statemenet to pandas DataFrame"
 readme = "README.md"
+keywords = ["banking", "pandas", "converter"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
 requires-python = ">=3.11"
 dependencies = [
     "numpy>=2.0.0,<3.0.0",
@@ -10,3 +20,40 @@ dependencies = [
     "pdfplumber>=0.11.10,<1.0.0",
 ]
 
+[project.urls]
+Repository = "https://github.com/loginchik/pdfplumber-bank-ru"
+
+[dependency-groups]
+lint = [
+    "ruff>=0.16.5",
+]
+test = [
+    "pytest>=9.1.1",
+    "tox>=4.61.2",
+]
+
+
+[tool.ruff]
+line-length = 127
+indent-width = 4
+
+[tool.ruff.lint]
+ignore = [
+    "UP006", "UP007", "UP035", "UP045",
+    "I001",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.tox]
+requires = ["tox>=4.19"]
+env_list = ["3.14", "3.13", "3.12", "3.11"]
+
+[tool.tox.env_run_base]
+description = "Run test under {base_python}"
+allowlist_externals = [
+    "pytest",
+]
+commands = [["pytest"]]
