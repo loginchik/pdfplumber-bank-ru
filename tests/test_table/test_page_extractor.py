@@ -167,7 +167,7 @@ class TestOzonBankPageExtractor(TestPageExtractorBase):
 
     def test_convert_to_frame(self) -> None:
         df_1 = self.extractor_1.convert_to_frame()
-        df_2 = self.extractor_2.convert_to_frame(boundaries=self.extractor_1._get_cell_boundaries())
+        df_2 = self.extractor_2.convert_to_frame(boundaries=self.extractor_1.get_cell_boundaries())
 
         assert isinstance(df_1, pd.DataFrame)
         assert isinstance(df_2, pd.DataFrame)

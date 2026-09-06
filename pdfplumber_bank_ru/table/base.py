@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Tuple, List, Optional, Any
+from typing import Tuple, List, Optional, Any, Dict
 
+import numpy as np
 import pandas as pd
 import pdfplumber
 from pdfplumber.pdf import PDF
@@ -46,21 +47,41 @@ class BaseTablePageExtractor(ABC, BasicProcessor):
 
         if boundaries is None:
             try:
-                boundaries = self._get_cell_boundaries()
+                boundaries = self.get_cell_boundaries()
             except ValueError as e:
                 self.logger.error("failed to determine columns boundaries", exc_info=e)
                 return pd.DataFrame(columns=list(self.pdf_columns))
 
-        return self.words_to_frame(bounds=boundaries)
+        return self.words_to_frame(bounds=boundaries).reset_index(drop=True)
 
     def get_cell_boundaries(self) -> List[CellBoundary]:
+        """
+        Возвращает или уже определённые, или впервые определённые границы
+        ячеек в таблице на текущей странице
+
+        :return: границы ячеек в таблице на странице
+        """
         if self.__boundaries is None:
             if not self.__table_located:
                 self.locate_table()
-            self.__boundaries = self._get_cell_boundaries()
+
+            bounds_df = self._get_cell_boundaries()
+            self._validate_bounds_df(bounds_df)
+
+            bounds_df["right"] = bounds_df["left"].shift(-1).fillna(np.inf)
+            self.__boundaries = [
+                CellBoundary(**bound) for bound in bounds_df.sort_values("cell")[["left", "right"]].to_dict(orient="records")
+            ]
+
         return self.__boundaries
 
     def locate_table(self) -> Word:
+        """
+        Определяет начало таблицы и обрезает внутренний список слов так,
+        чтобы он начинался сразу с таблицы
+
+        :return: первое слово в таблице
+        """
         word, i = self._locate_table()
         self.words = self.words[i:]
         self.__table_located = True
@@ -79,16 +100,48 @@ class BaseTablePageExtractor(ABC, BasicProcessor):
 
     @property
     def pdf_columns_count(self) -> int:
+        """
+        Количество колонок в таблице в PDF-файле
+        """
         return len(self.pdf_columns)
 
     @abstractmethod
     def _locate_table(self) -> Tuple[Word, int]: ...
 
     @abstractmethod
-    def _get_cell_boundaries(self) -> List[CellBoundary]: ...
+    def _get_cell_boundaries(self) -> pd.DataFrame: ...
 
     @abstractmethod
     def words_to_frame(self, bounds: List[CellBoundary]) -> pd.DataFrame: ...
+
+    def _group_df_to_records(self, df: pd.DataFrame, rename_columns: bool = True, drop_index: bool = True) -> pd.DataFrame:
+        """
+        Группирует сырой фрейм по строкам и столбцам, чтобы образовать таблицу с транзакциями
+
+        :param df: исходный фрейм
+        :param rename_columns: устанавливать ли названия колонок
+        :param drop_index:
+        :return: записи о транзакциях
+        """
+        df = df.groupby(["row", "cell"])["text"].agg(lambda x: " ".join(x)).unstack("cell")
+        if rename_columns:
+            df.columns = list(self.pdf_columns)
+
+        df = df.reset_index(drop=drop_index)
+        return df
+
+    def _validate_bounds_df(self, bounds_df: pd.DataFrame) -> None:
+        """
+        Сопоставляет количество колонок, для которых определены границы,
+        с ожидаемым количеством колонок
+
+        :param bounds_df: фрейм с границами колонок таблицы
+        :raise ValueError:
+        """
+        if (determined_columns_count := bounds_df["left"].shape[0]) != self.pdf_columns_count:
+            raise ValueError(
+                f"number of columns does not match expected: {determined_columns_count} != {self.pdf_columns_count}"
+            )
 
     @staticmethod
     def _get_first_cell(words: List[Word], target_words: List[str]) -> Tuple[Word, int]:
@@ -141,6 +194,7 @@ class BaseTableExtractor(ABC, BasicProcessor):
         :return: образованный фрейм
         :raise ValueError: ни одна таблица не образована
         """
+        self.validate_pdf_file(filepath)
         with pdfplumber.open(filepath) as pdf:
             return self.extract_from_pdf(pdf)
 
@@ -188,3 +242,26 @@ class BaseTableExtractor(ABC, BasicProcessor):
 
     @abstractmethod
     def _update_merged_pages(self, df: pd.DataFrame) -> pd.DataFrame: ...
+
+    @staticmethod
+    def _update_money_amount_columns(df: pd.DataFrame, additional_replacements: Optional[Dict[str, str]]) -> pd.DataFrame:
+        """
+        Извлекает валюту из колонки с суммой операции в валюте операции
+        и преобразует колонки с суммами операций в числовые значения
+
+        :param df: фрейм
+        :param additional_replacements: дополнительные замены
+        :return: обновлённый фрейм
+        """
+        if TableColumnEnum.money_op_curr in df.columns:
+            df[TableColumnEnum.currency] = df[TableColumnEnum.money_op_curr].str[-1]
+
+        money_columns = list({TableColumnEnum.money_op_curr, TableColumnEnum.money_acc_curr} & set(df.columns))
+        for col in money_columns:
+            if additional_replacements is not None:
+                for repl_before, repl_after in additional_replacements.items():
+                    df[col] = df[col].str.replace(repl_before, repl_after)
+
+            df[col] = pd.to_numeric(df[col].str.replace(r"[^-+,0-9]", "", regex=True).str.replace(",", "."), errors="coerce")
+
+        return df

@@ -1,4 +1,5 @@
 from logging import getLogger
+from pathlib import Path
 from typing import List
 
 from pdfplumber.page import Page
@@ -8,6 +9,12 @@ from .schemas import Word
 
 
 class BasicProcessor:
+    """
+    Базовый обработчик
+
+    Задает общие для разных структур статичные методы и параметры класса
+    """
+
     BANK_NAME: BankNameEnum = None
 
     def __init__(self, **kwargs) -> None:
@@ -24,3 +31,17 @@ class BasicProcessor:
         :return: слова со страницы
         """
         return [Word.from_dict(w) for w in page.extract_words(x_tolerance=x_tolerance, y_tolerance=y_tolerance)]
+
+    @staticmethod
+    def validate_pdf_file(filepath: Path) -> None:
+        """
+        Валидирует путь к файлу, чтобы он поддерживался текущим процессом
+
+        :param filepath: путь к файлу
+        :raise FileNotFoundError: файл не найден или не является файлом
+        :raise ValueError: некорректное расширение
+        """
+        if not filepath.exists() or not filepath.is_file():
+            raise FileExistsError(f"file not found: {filepath}")
+        if not filepath.suffix == ".pdf":
+            raise ValueError(f"file extension not supported: {filepath.suffix}. expected .pdf")
