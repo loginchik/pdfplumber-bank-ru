@@ -108,7 +108,7 @@ class BaseMetadataExtractor(ABC, BasicProcessor):
             issued_date = self.__get_word_by_collocation(words, collocation, shift)
         except IndexError as e:
             raise IndexError("no issued date found on first page") from e
-        return dt.datetime.strptime(issued_date.text, "%d.%m.%Y").date()
+        return dt.datetime.strptime(issued_date.text, "%d.%m.%Y").date()  # noqa: DTZ007
 
     def _get_period(self, words: List[Word], collocation: str, step: int = 2, shift: int = 0) -> Tuple[dt.date, dt.date]:
         """
@@ -130,8 +130,8 @@ class BaseMetadataExtractor(ABC, BasicProcessor):
         start_date = words[collocation_end_i + shift]
         end_date = words[collocation_end_i + step + shift]
 
-        start_date = dt.datetime.strptime(start_date.text, "%d.%m.%Y").date()
-        end_date = dt.datetime.strptime(end_date.text, "%d.%m.%Y").date()
+        start_date = dt.datetime.strptime(start_date.text, "%d.%m.%Y").date()  # noqa: DTZ007
+        end_date = dt.datetime.strptime(end_date.text, "%d.%m.%Y").date()  # noqa: DTZ007
         return start_date, end_date
 
     def __get_word_by_collocation(self, words: List[Word], collocation: str, shift: int = 0) -> Word:

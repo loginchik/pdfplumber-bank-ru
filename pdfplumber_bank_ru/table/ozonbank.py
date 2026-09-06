@@ -41,12 +41,12 @@ class OzonBankTablePageExtractor(BaseTablePageExtractor):
         """
         try:
             return self._get_first_cell(words=self.words, target_words=self.pdf_columns[0].split()[:2])
-        except ValueError as e:
+        except ValueError:
             if re.match(r"^(\d{2}\.){2}\d{4}$", (word := self.words[0]).text) and re.match(
                 r"^(\d{2}:){2}\d{2}$", self.words[1].text
             ):
                 return word, 0
-            raise e
+            raise
 
     def _get_cell_boundaries(self) -> pd.DataFrame:
         """

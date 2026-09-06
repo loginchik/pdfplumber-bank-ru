@@ -140,7 +140,7 @@ class BaseTablePageExtractor(ABC, BasicProcessor):
         """
         if (determined_columns_count := bounds_df["left"].shape[0]) != self.pdf_columns_count:
             raise ValueError(
-                "number of columns does not match expected: {} != {}".format(determined_columns_count, self.pdf_columns_count)
+                f"number of columns does not match expected: {determined_columns_count} != {self.pdf_columns_count}"
             )
 
     @staticmethod

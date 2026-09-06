@@ -42,6 +42,6 @@ class BasicProcessor:
         :raise ValueError: некорректное расширение
         """
         if not filepath.exists() or not filepath.is_file():
-            raise FileExistsError("file not found: {}".format(filepath))
+            raise FileExistsError(f"file not found: {filepath}")
         if not filepath.suffix == ".pdf":
-            raise ValueError("file extension not supported: {}. expected .pdf".format(filepath.suffix))
+            raise ValueError(f"file extension not supported: {filepath.suffix}. expected .pdf")

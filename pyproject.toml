@@ -23,6 +23,12 @@ test = [
 line-length = 127
 indent-width = 4
 
+[tool.ruff.lint]
+ignore = [
+    "UP006", "UP007", "UP035", "UP045",
+    "I001",
+]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"

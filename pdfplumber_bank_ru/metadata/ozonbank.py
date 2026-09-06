@@ -1,5 +1,4 @@
 import datetime as dt
-import re
 from typing import Dict, List, Tuple
 
 from commons.enums import BankNameEnum
