@@ -1,0 +1,34 @@
+name: Run public tests
+
+on:
+  pull_request:
+    branches:
+      - master
+      - development
+    paths:
+      - src/**.py
+      - .github/workflows/test.yml
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
+        with:
+          python-version: ${{ matrix.python-version }}
+          no-project: 'true'
+          enable-cache: 'auto'
+      - name: Install dependencies
+        run: | 
+          uv python install 
+          uv sync --group test
+      - name: Run pytest
+        run: uv run --frozen pytest tests/test_metadata.py::TestBaseMetadataExtractor --junitxml=junit/test-results.xml
