@@ -1,0 +1,26 @@
+name: Check code formatting
+
+on:
+  pull_request:
+    branches:
+      - master
+      - development
+    paths:
+      - src/**.py
+      - .github/workflows/lint.yml
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.14
+      - name: Install ruff
+        run: pip install ruff
+      - name: Check formatting with ruff
+        run: ruff check --output-format=github
