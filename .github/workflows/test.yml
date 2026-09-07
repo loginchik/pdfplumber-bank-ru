@@ -1,8 +1,14 @@
 name: Check code formatting
 
 on:
-  workflow_run: [Check formatting]
-  types: [completed]
+  push:
+    branches:
+      - ci
+      - development
+  pull_request:
+    branches:
+      - master
+      - development
 
 permissions:
   contents: read
