@@ -262,6 +262,6 @@ class BaseTableExtractor(ABC, BasicProcessor):
                 for repl_before, repl_after in additional_replacements.items():
                     df[col] = df[col].str.replace(repl_before, repl_after)
 
-            df[col] = pd.to_numeric(df[col].str.replace(r"[^-+,0-9]", "", regex=True).str.replace(",", "."), errors="coerce")
+            df[col] = pd.to_numeric(df[col].str.replace(r"[^-+\.,0-9]", "", regex=True).str.replace(",", "."), errors="coerce")
 
         return df
