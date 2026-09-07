@@ -11,6 +11,7 @@ from pdfplumber.page import Page
 from pdfplumber_bank_ru.commons.base import BasicProcessor
 from pdfplumber_bank_ru.commons.enums import BankNameEnum, TableColumnEnum
 from pdfplumber_bank_ru.commons.schemas import Word, CellBoundary
+from pdfplumber_bank_ru.commons.exc import TableLocationError
 
 
 class BaseTablePageExtractor(ABC, BasicProcessor):
@@ -39,19 +40,10 @@ class BaseTablePageExtractor(ABC, BasicProcessor):
         :param boundaries: внешняя структура таблицы
         :return: образованный фрейм
         """
-        try:
-            self.locate_table()
-        except ValueError as e:
-            self.logger.error("failed to find first cell", exc_info=e)
-            return pd.DataFrame(columns=list(self.pdf_columns))
+        self.locate_table()
 
         if boundaries is None:
-            try:
-                boundaries = self.get_cell_boundaries()
-            except ValueError as e:
-                self.logger.error("failed to determine columns boundaries", exc_info=e)
-                return pd.DataFrame(columns=list(self.pdf_columns))
-
+            boundaries = self.get_cell_boundaries()
         return self.words_to_frame(bounds=boundaries).reset_index(drop=True)
 
     def get_cell_boundaries(self) -> List[CellBoundary]:
@@ -161,7 +153,7 @@ class BaseTablePageExtractor(ABC, BasicProcessor):
             current_collocation = " ".join([w.text for w in words[i : i + len(target_words)]])
             if current_collocation == target_collocation:
                 return word, i
-        raise ValueError()
+        raise TableLocationError(f"failed to find target collocation: {target_collocation}")
 
     @staticmethod
     def bound_to_cell(word: pd.Series, bounds: List[CellBoundary]) -> Optional[int]:
@@ -214,7 +206,13 @@ class BaseTableExtractor(ABC, BasicProcessor):
             if p == 1 and boundaries is None:
                 boundaries = page_processor.get_cell_boundaries()
 
-            df = page_processor.convert_to_frame(boundaries=boundaries)
+            try:
+                df = page_processor.convert_to_frame(boundaries=boundaries)
+            except TableLocationError:
+                if p == len(pdf.pages):
+                    break
+                raise
+
             if df.shape[0] > 0:
                 df.columns = list(self.table_columns)
                 df[TableColumnEnum.page_no] = p
@@ -222,7 +220,7 @@ class BaseTableExtractor(ABC, BasicProcessor):
                 dfs.append(df)
 
         if len(dfs) == 0:
-            raise ValueError("no table extracted from pdf")
+            raise TableLocationError("no table extracted from pdf")
 
         dfs = self._update_merged_pages(df=pd.concat(dfs, axis=0, ignore_index=True))
         dfs.columns = [col.value if not isinstance(col, str) else col for col in dfs.columns]
@@ -234,10 +232,10 @@ class BaseTableExtractor(ABC, BasicProcessor):
 
         :param page: страница выписки
         :return: обработчик для этой страницы
-        :raise ValueError: целевой класс обработчика не задан
+        :raise NotImplementedError: целевой класс обработчика не задан
         """
         if self.page_processor_class is None:
-            raise ValueError("page processor class is not specified")
+            raise NotImplementedError("page processor class is not specified")
         return self.page_processor_class(page=page)
 
     @abstractmethod
@@ -262,6 +260,6 @@ class BaseTableExtractor(ABC, BasicProcessor):
                 for repl_before, repl_after in additional_replacements.items():
                     df[col] = df[col].str.replace(repl_before, repl_after)
 
-            df[col] = pd.to_numeric(df[col].str.replace(r"[^-+,0-9]", "", regex=True).str.replace(",", "."), errors="coerce")
+            df[col] = pd.to_numeric(df[col].str.replace(r"[^-+\.,0-9]", "", regex=True).str.replace(",", "."), errors="coerce")
 
         return df

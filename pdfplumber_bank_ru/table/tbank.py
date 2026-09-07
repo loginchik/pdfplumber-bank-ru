@@ -62,6 +62,9 @@ class TBankTablePageExtractor(BaseTablePageExtractor):
         df = df.dropna(subset="cell").reset_index(drop=True)
         df["cell"] = df["cell"].astype(int)
         df["row"] = (df["cell"] == 0).cumsum() - 1
+        df = df[df["row"] >= 0]
+        if df.shape[0] == 0:
+            return pd.DataFrame(columns=self.pdf_columns)
 
         df = self._group_df_to_records(df, drop_index=False)
         df = df[df[self.pdf_columns[0]].str.match(r"^\d{2}.\d{2}(.\d{4})?$")]

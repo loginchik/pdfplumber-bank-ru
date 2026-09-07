@@ -6,7 +6,7 @@ on:
       - master
       - development
     paths:
-      - src/**.py
+      - src/*.py
       - .github/workflows/test.yml
 
 jobs:
