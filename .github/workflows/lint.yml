@@ -5,6 +5,9 @@ on:
     branches:
       - master
       - development
+    paths:
+      - src/**.py
+      - .github/workflows/lint.yml
 
 jobs:
   lint:
