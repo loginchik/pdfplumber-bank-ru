@@ -161,7 +161,7 @@ class BaseTablePageExtractor(ABC, BasicProcessor):
             current_collocation = " ".join([w.text for w in words[i : i + len(target_words)]])
             if current_collocation == target_collocation:
                 return word, i
-        raise ValueError()
+        raise ValueError(f"failed to find target collocation: {target_collocation}")
 
     @staticmethod
     def bound_to_cell(word: pd.Series, bounds: List[CellBoundary]) -> Optional[int]:
