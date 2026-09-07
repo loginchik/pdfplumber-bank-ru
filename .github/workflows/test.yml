@@ -1,10 +1,6 @@
 name: Check code formatting
 
 on:
-  push:
-    branches:
-      - ci
-      - development
   pull_request:
     branches:
       - master
@@ -34,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: | 
           uv python install 
-          uv sync --group tests
+          uv sync --group test
       - name: Run pytest
         run: uv run --frozen pytest tests/test_metadata.py::TestBaseMetadataExtractor --junitxml=junit/test-results.xml
       - name: Upload test report
