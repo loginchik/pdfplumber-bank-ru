@@ -1,0 +1,2 @@
+class TableLocationError(ValueError):
+    pass

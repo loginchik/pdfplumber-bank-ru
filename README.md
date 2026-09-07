@@ -26,7 +26,7 @@ df = TBankTableExtractor().extract_from_file(filepath=Path("foo/path-to-pdf.pdf"
 Извлечение данных о банковской выписке: 
 
 ```python
-from pathlib import Path 
+from pathlib import Path
 
 from pdfplumber_bank_ru.metadata import TBankMetadataExtractor
 
